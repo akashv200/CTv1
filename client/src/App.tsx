@@ -1,13 +1,12 @@
 import { useEffect } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Boxes, Home, LayoutDashboard, LogOut, Network, Package, QrCode, Settings, ShieldCheck, UserCircle, Wallet } from "lucide-react";
+import { Boxes, Home, LayoutDashboard, LogOut, QrCode, Settings, UserCircle, Wallet } from "lucide-react";
 import LandingPage from "./pages/LandingPage";
 import DashboardPage from "./pages/DashboardPage";
 import RegisterProductPage from "./pages/RegisterProductPage";
 import VerifyProductPage from "./pages/VerifyProductPage";
 import SettingsPage from "./pages/SettingsPage";
-import DomainLearnMorePage from "./pages/DomainLearnMorePage";
 import { cn } from "./lib/utils";
 import { useThemeStore } from "./store/useThemeStore";
 import { useWalletStore } from "./store/useWalletStore";
@@ -15,19 +14,14 @@ import { useChainTraceStore } from "./store/useChainTraceStore";
 import Button from "./components/common/Button";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import ScmWorkspacePage from "./pages/ScmWorkspacePage";
-import AdminOnboardingPage from "./pages/AdminOnboardingPage";
 import SetupPasswordPage from "./pages/SetupPasswordPage";
-import Warehouse3DPage from "./pages/Warehouse3DPage";
 import { getAccessTokenPayload } from "./lib/session";
 import FloatingBackground from "./components/common/FloatingBackground";
 
 const baseNavItems = [
   { to: "/", label: "Home", icon: Home },
-  { to: "/dashboard", label: "Operations", icon: LayoutDashboard },
-  { to: "/scm", label: "Ecosystem", icon: Network },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/register", label: "Products", icon: Boxes },
-  { to: "/warehouse/3d", label: "Warehouse", icon: Package },
   { to: "/verify", label: "Verify", icon: QrCode },
   { to: "/settings", label: "Settings", icon: Settings }
 ];
@@ -40,9 +34,7 @@ function AppNav() {
   const chainId = useWalletStore((state) => state.chainId);
   const isConnecting = useWalletStore((state) => state.isConnecting);
   const connectWallet = useWalletStore((state) => state.connect);
-  const navItems = session?.role === "super_admin"
-    ? [...baseNavItems.slice(0, 2), { to: "/admin/onboarding", label: "Admin", icon: ShieldCheck }, ...baseNavItems.slice(2)]
-    : baseNavItems;
+  const navItems = baseNavItems;
 
   const chainLabel = (() => {
     if (!chainId) return "Chain ?";
@@ -172,23 +164,11 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<RegisterPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/scm" element={<Navigate to="/scm/directory" replace />} />
-        <Route path="/scm/directory" element={<ScmWorkspacePage sectionKey="directory" />} />
-        <Route path="/scm/ecosystem" element={<ScmWorkspacePage sectionKey="ecosystem" />} />
-        <Route path="/scm/suppliers" element={<ScmWorkspacePage sectionKey="suppliers" />} />
-        <Route path="/scm/orders" element={<ScmWorkspacePage sectionKey="orders" />} />
-        <Route path="/scm/inventory" element={<ScmWorkspacePage sectionKey="inventory" />} />
-        <Route path="/scm/shipments" element={<ScmWorkspacePage sectionKey="shipments" />} />
-        <Route path="/scm/production" element={<ScmWorkspacePage sectionKey="production" />} />
-        <Route path="/scm/optimization" element={<ScmWorkspacePage sectionKey="optimization" />} />
-        <Route path="/scm/connectors" element={<ScmWorkspacePage sectionKey="connectors" />} />
-        <Route path="/admin/onboarding" element={<AdminOnboardingPage />} />
         <Route path="/register" element={<RegisterProductPage />} />
         <Route path="/verify" element={<VerifyProductPage />} />
+        <Route path="/verify/:productId" element={<VerifyProductPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/password/complete" element={<SetupPasswordPage />} />
-        <Route path="/warehouse/3d" element={<Warehouse3DPage />} />
-        <Route path="/domains/:domainKey" element={<DomainLearnMorePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
