@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { env } from "../config/env.js";
 
 let genAI: GoogleGenerativeAI | null = null;
