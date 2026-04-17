@@ -1,10 +1,6 @@
 import AppShell from "../components/dashboard/AppShell";
 import StatsGrid from "../components/dashboard/StatsGrid";
 import ActivityTimeline from "../components/dashboard/ActivityTimeline";
-import AnalyticsCharts from "../components/dashboard/AnalyticsCharts";
-import AIInsightsPanel from "../components/dashboard/AIInsightsPanel";
-import WarehouseScene from "../components/three/WarehouseScene";
-import TrackingMap from "../components/maps/TrackingMap";
 import Card from "../components/common/Card";
 import Badge from "../components/common/Badge";
 import { useChainTraceStore } from "../store/useChainTraceStore";
@@ -13,15 +9,9 @@ import { useRealtimeFeed } from "../hooks/useRealtimeFeed";
 
 export default function DashboardPage() {
   useRealtimeFeed();
-  const activeDomain = useChainTraceStore((state) => state.activeDomain);
+  const activeDomain = "agriculture";
   const iotDevices = useChainTraceStore((state) => state.iotDevices);
-  const highlights = domainHighlights[activeDomain];
-  const integrations = [
-    { name: "SAP ERP", status: "Ready to Connect" },
-    { name: "Shopify", status: "Connector Available" },
-    { name: "AWS IoT Core", status: "MQTT Bridge Ready" },
-    { name: "FedEx API", status: "Awaiting Credentials" }
-  ];
+  const highlights = domainHighlights[activeDomain] || ["Harvest tracking", "Certification verified", "Location history"];
 
   return (
     <AppShell>
@@ -101,20 +91,15 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">
-        <div id="checkpoints-section" className="scroll-mt-24">
-          <ActivityTimeline />
-        </div>
-        <div id="ai-assistant-section" className="scroll-mt-24">
-          <AIInsightsPanel />
-        </div>
+      <section id="checkpoints-section" className="scroll-mt-24">
+        <ActivityTimeline />
       </section>
 
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
         <div id="products-section" className="scroll-mt-24">
           <Card className="min-h-[360px]">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Domain Highlights</h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Agriculture Features</h3>
               <Badge variant="success">{activeDomain}</Badge>
             </div>
             <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
@@ -126,36 +111,6 @@ export default function DashboardPage() {
             </ul>
           </Card>
         </div>
-        <div id="verification-section" className="scroll-mt-24">
-          <TrackingMap />
-        </div>
-      </section>
-
-      <section id="reports-section" className="scroll-mt-24">
-        <h2 className="mb-3 text-xl font-semibold text-slate-900 dark:text-slate-100">Reports & Analytics</h2>
-        <AnalyticsCharts />
-      </section>
-
-      <section id="warehouse-section" className="scroll-mt-24">
-        <h2 className="mb-3 text-xl font-semibold text-slate-900 dark:text-slate-100">Interactive 3D Warehouse (Showcase)</h2>
-        <WarehouseScene />
-      </section>
-
-      <section id="integrations-section" className="scroll-mt-24">
-        <Card>
-          <h2 className="mb-3 text-xl font-semibold text-slate-900 dark:text-slate-100">Integrations</h2>
-          <p className="mb-4 text-sm text-slate-600 dark:text-slate-300">
-            Connect external systems to sync inventory, logistics, and enterprise workflows.
-          </p>
-          <div className="grid gap-3 md:grid-cols-2">
-            {integrations.map((integration) => (
-              <div key={integration.name} className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{integration.name}</p>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{integration.status}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
       </section>
     </AppShell>
   );
