@@ -1,0 +1,89 @@
+openapi: 3.0.0
+info:
+  title: ChainTrace SCM & Governance API
+  version: 1.0.0
+  description: API for managing decentralized supply chain networks and multi-signature governance.
+servers:
+  - url: http://localhost:4000/api
+paths:
+  /auth/login:
+    post:
+      summary: Login to platform
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: OK
+  /b2b/networks:
+    get:
+      summary: List all supply chain networks (including pending)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: A list of networks
+    post:
+      summary: Create a new supply chain network (initiates governance)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                domain: { type: string }
+                description: { type: string }
+      responses:
+        '201':
+          description: Network created
+  /b2b/networks/{id}/approve:
+    post:
+      summary: Sign and approve a pending network
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Approved
+  /b2b/networks/{id}/deploy:
+    post:
+      summary: Provision relationships to the blockchain (Zap)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nodes: { type: array, items: { type: object } }
+                edges: { type: array, items: { type: object } }
+      responses:
+        '200':
+          description: Deployed
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -1,0 +1,10 @@
+1.Start Docker,Ganache,pgadmin
+2.in root folder .\start-infrastructure.bat
+3. cd blockchain
+   npx ganache --port 7545 --chainId 5777
+4. cd blockchain
+   npm run deploy:ganache
+5.seed data -> cd server
+               npm run seed:demo
+6.root folder npm run dev:backend
+7. "       "  npm run dev:frontend

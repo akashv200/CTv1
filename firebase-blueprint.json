@@ -1,0 +1,109 @@
+{
+  "entities": {
+    "Company": {
+      "title": "Company",
+      "description": "Master organization registry for supply chain participants",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyCode": { "type": "string" },
+        "companyName": { "type": "string" },
+        "domain": { "type": "string", "enum": ["agriculture", "pharmaceutical", "food", "ecommerce", "warehouse"] },
+        "status": { "type": "string", "enum": ["active", "inactive", "suspended", "pending_approval"] },
+        "domainMetadata": { "type": "object" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "companyCode", "companyName", "domain", "status"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Platform user information and role mapping",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "organizationId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["super_admin", "org_admin", "producer", "distributor", "retailer", "inspector", "consumer", "auditor"] },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "email", "role"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Core product registry for tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "companyId": { "type": "string" },
+        "domain": { "type": "string" },
+        "productName": { "type": "string" },
+        "sku": { "type": "string" },
+        "batchNumber": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "warning", "critical", "recalled", "expired", "verified", "flagged"] },
+        "originLocation": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "productId", "companyId", "domain", "productName", "status"]
+    },
+    "Checkpoint": {
+      "title": "Checkpoint",
+      "description": "Supply chain event or milestone tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "companyId": { "type": "string" },
+        "recordedBy": { "type": "string" },
+        "checkpointType": { "type": "string", "enum": ["received", "quality-check", "processed", "dispatched", "in-transit", "delivered", "recall", "transformation", "harvest", "packaging", "custom"] },
+        "location": { "type": "string" },
+        "temperature": { "type": "number" },
+        "humidity": { "type": "number" },
+        "txHash": { "type": "string" },
+        "occurredAt": { "type": "string" }
+      },
+      "required": ["id", "productId", "companyId", "recordedBy", "checkpointType"]
+    },
+    "AIInsight": {
+      "title": "AI Insight",
+      "description": "AI-generated anomalies and recommendations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyId": { "type": "string" },
+        "productId": { "type": "string" },
+        "insightType": { "type": "string", "enum": ["temperature_breach", "humidity_spike", "location_deviation", "delay", "tampering", "demand_forecast", "optimization", "inventory_alert", "quality_risk", "custom"] },
+        "severity": { "type": "string", "enum": ["info", "warning", "high", "critical"] },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "isResolved": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "insightType", "severity", "title", "description"]
+    }
+  },
+  "firestore": {
+    "/companies/{companyId}": {
+      "schema": { "$ref": "Company" },
+      "description": "Store organization details"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "User" },
+      "description": "Store platform user profiles"
+    },
+    "/products/{productId}": {
+      "schema": { "$ref": "Product" },
+      "description": "Store tracked products"
+    },
+    "/checkpoints/{checkpointId}": {
+      "schema": { "$ref": "Checkpoint" },
+      "description": "Store supply chain events"
+    },
+    "/ai_insights/{insightId}": {
+      "schema": { "$ref": "AIInsight" },
+      "description": "Store generated AI alerts and advice"
+    }
+  }
+}

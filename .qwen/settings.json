@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx *)",
+      "Bash(findstr *)",
+      "Bash(npm run *)",
+      "Bash(npm test)",
+      "Bash(python *)",
+      "Bash(docker version)",
+      "Bash(docker-compose *)",
+      "Bash(type *)",
+      "Bash(@echo *)",
+      "Bash(echo.)",
+      "Bash(docker build *)",
+      "Bash(docker run *)",
+      "Bash(powershell *)",
+      "Bash(del *)"
+    ]
+  },
+  "$version": 3
+}

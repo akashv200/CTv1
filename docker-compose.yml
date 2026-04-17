@@ -1,0 +1,123 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # PostgreSQL Database
+  # ==========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: chaintrace-postgres
+    environment:
+      POSTGRES_DB: chaintrace
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: AkAkAk007
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ==========================================
+  # Redis Cache & Session Store
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    container_name: chaintrace-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  # ==========================================
+  # MQTT Broker (IoT Sensors)
+  # ==========================================
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    container_name: chaintrace-mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    restart: unless-stopped
+
+  # ==========================================
+  # AI/ML Anomaly Detection Service (Python)
+  # ==========================================
+  ai-service:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    container_name: chaintrace-ai
+    ports:
+      - "5000:5000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MODEL_PATH=/app/models
+      - PG_URL=postgresql://postgres:postgres@postgres:5432/chaintrace
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./ai/models:/app/models
+      - ./ai/data:/app/data
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    profiles:
+      - ai
+
+  # ==========================================
+  # PgAdmin (Database Management UI) - Optional
+  # ==========================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: chaintrace-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@chaintrace.io
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    profiles:
+      - tools
+
+  # ==========================================
+  # Redis Commander (Redis UI) - Optional
+  # ==========================================
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: chaintrace-redis-ui
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    restart: unless-stopped
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+  redis_data:
+  mosquitto_data:
+  mosquitto_log:
+  pgadmin_data:

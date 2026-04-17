@@ -1,0 +1,76 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    /* Sleeker dark background */
+    @apply bg-slate-50 text-slate-900 antialiased dark:bg-[#0a0f18] dark:text-slate-100;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-heading tracking-tight;
+  }
+
+  /* Premium scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 dark:bg-slate-800 rounded-full hover:bg-slate-400 dark:hover:bg-slate-700 transition-colors;
+  }
+}
+
+@layer components {
+  /* Premium Glassmorphism */
+  .glass-card {
+    @apply rounded-[24px] border border-white/40 bg-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.02] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)];
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+  
+  .glass-card:hover {
+    @apply border-white/60 bg-white/80 dark:border-white/20 dark:bg-white/[0.04] shadow-[0_20px_40px_rgb(0,0,0,0.08)] dark:shadow-[0_20px_40px_rgb(0,0,0,0.4)];
+    transform: translateY(-3px);
+  }
+
+  /* Stunning Interactive Elements */
+  .neo-button {
+    @apply relative overflow-hidden transition-all duration-300 ease-out hover:-translate-y-0.5 active:translate-y-0 hover:shadow-glow dark:hover:shadow-glow-dark;
+  }
+
+  .neo-button::after {
+    content: '';
+    @apply absolute inset-0 bg-white/20 opacity-0 transition-opacity duration-300;
+  }
+
+  .neo-button:hover::after {
+    @apply opacity-100;
+  }
+
+  .domain-pill {
+    @apply rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider transition-transform duration-200 hover:scale-105;
+  }
+
+  /* Dynamic Gradients */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500 dark:from-emerald-400 dark:via-cyan-300 dark:to-blue-400;
+  }
+}

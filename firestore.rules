@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: companies
+    // Fields: id, companyCode, companyName, domain, status, domainMetadata, createdAt
+    //
+    // Collection: users
+    // Fields: id, organizationId, name, email, role, isActive, createdAt
+    //
+    // Collection: products
+    // Fields: id, productId, companyId, domain, productName, sku, batchNumber, status, originLocation, createdAt
+    //
+    // Collection: checkpoints
+    // Fields: id, productId, companyId, recordedBy, checkpointType, location, temperature, humidity, txHash, occurredAt
+    //
+    // Collection: ai_insights
+    // Fields: id, companyId, productId, insightType, severity, title, description, isResolved, createdAt
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin' ||
+         (request.auth.token.email == "akashak2004ak@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'role']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             isValidEmail(data.email) &&
+             data.role in ['super_admin', 'org_admin', 'producer', 'distributor', 'retailer', 'inspector', 'consumer', 'auditor'];
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['id', 'productId', 'companyId', 'domain', 'productName', 'status']) &&
+             data.productName is string && data.productName.size() > 0 && data.productName.size() < 200 &&
+             data.status in ['active', 'warning', 'critical', 'recalled', 'expired', 'verified', 'flagged'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) && request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /companies/{companyId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /products/{productId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidProduct(request.resource.data);
+      allow update: if isAuthenticated() && isValidProduct(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /checkpoints/{checkpointId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+    }
+
+    match /ai_insights/{insightId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

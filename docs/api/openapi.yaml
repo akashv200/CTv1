@@ -1,0 +1,143 @@
+openapi: 3.0.3
+info:
+  title: ChainTrace API
+  version: 0.1.0
+  description: REST API for ChainTrace supply chain platform
+servers:
+  - url: http://localhost:4000/api
+paths:
+  /health:
+    get:
+      summary: Service health
+      responses:
+        '200':
+          description: Service is healthy
+  /auth/register:
+    post:
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+      responses:
+        '201':
+          description: User created
+  /auth/login:
+    post:
+      summary: Login and obtain tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Access/refresh tokens
+  /products:
+    get:
+      summary: List products
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Product list
+    post:
+      summary: Create product
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                domain:
+                  type: string
+                productName:
+                  type: string
+                batchNumber:
+                  type: string
+                quantity:
+                  type: number
+                unit:
+                  type: string
+                originLocation:
+                  type: string
+      responses:
+        '201':
+          description: Product created
+  /products/{productId}/journey:
+    get:
+      summary: Get product journey
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product and checkpoints
+  /checkpoints:
+    post:
+      summary: Add checkpoint
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productId:
+                  type: string
+                checkpointType:
+                  type: string
+                location:
+                  type: string
+                temperature:
+                  type: number
+                humidity:
+                  type: number
+      responses:
+        '201':
+          description: Checkpoint created
+  /verify/{productId}:
+    get:
+      summary: Public product verification
+      parameters:
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Verification result
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
