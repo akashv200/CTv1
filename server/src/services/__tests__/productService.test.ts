@@ -2,9 +2,19 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { createProduct, getProductById } from "../productService";
 import * as traceabilityClient from "../../blockchain/traceabilityClient";
 
-// Mock Firestore
+// Mock Firestore and Firestore functions
 vi.mock("../../lib/firebase", () => ({
-  db: {}
+  db: {
+    collection: vi.fn(() => ({}))
+  }
+}));
+
+vi.mock("firebase/firestore", () => ({
+  collection: vi.fn(() => ({})),
+  doc: vi.fn(() => ({})),
+  setDoc: vi.fn().mockResolvedValue(undefined),
+  getDoc: vi.fn().mockResolvedValue({ exists: () => false }),
+  updateDoc: vi.fn().mockResolvedValue(undefined)
 }));
 
 // Mock blockchain client

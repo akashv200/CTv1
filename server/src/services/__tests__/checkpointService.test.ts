@@ -3,7 +3,17 @@ import { createCheckpoint, getCheckpointsByProductId } from "../checkpointServic
 import * as traceabilityClient from "../../blockchain/traceabilityClient";
 
 vi.mock("../../lib/firebase", () => ({
-  db: {}
+  db: {
+    collection: vi.fn(() => ({}))
+  }
+}));
+
+vi.mock("firebase/firestore", () => ({
+  collection: vi.fn(() => ({})),
+  doc: vi.fn(() => ({})),
+  setDoc: vi.fn().mockResolvedValue(undefined),
+  getDoc: vi.fn().mockResolvedValue({ exists: () => true, data: () => ({}) }),
+  updateDoc: vi.fn().mockResolvedValue(undefined)
 }));
 
 vi.mock("../../blockchain/traceabilityClient");
