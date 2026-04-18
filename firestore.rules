@@ -1,27 +1,17 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
+    
     // ===============================================================
-    // Assumed Data Model
+    // Phase 3: Agriculture Supply Chain RLS
     // ===============================================================
+    // Data Model:
+    // - products: {id, name, sku, origin, farmerId, status, blockchainTxHash, qrCodeUrl, checkpointCount}
+    // - checkpoints: {id, productId, location, timestamp, handler, status, blockchainTxHash}
+    // - users: {id, email, role, organizationId, status}
+    // - revokedTokens: {tokenHash, userId, revokedAt, expiresAt}
     //
-    // Collection: companies
-    // Fields: id, companyCode, companyName, domain, status, domainMetadata, createdAt
-    //
-    // Collection: users
-    // Fields: id, organizationId, name, email, role, isActive, createdAt
-    //
-    // Collection: products
-    // Fields: id, productId, companyId, domain, productName, sku, batchNumber, status, originLocation, createdAt
-    //
-    // Collection: checkpoints
-    // Fields: id, productId, companyId, recordedBy, checkpointType, location, temperature, humidity, txHash, occurredAt
-    //
-    // Collection: ai_insights
-    // Fields: id, companyId, productId, insightType, severity, title, description, isResolved, createdAt
-    //
-    // ===============================================================
+    // Roles: farmer, logistics, auditor, super_admin, public (no auth)
 
     // ===============================================================
     // Helper Functions
@@ -31,70 +21,110 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isFarmer() {
+      return isAuthenticated() && request.auth.token.role == 'farmer';
+    }
+
+    function isLogistics() {
+      return isAuthenticated() && request.auth.token.role in ['logistics', 'distributor'];
+    }
+
+    function isAuditor() {
+      return isAuthenticated() && request.auth.token.role in ['auditor', 'super_admin'];
+    }
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    function isAdmin() {
-      return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin' ||
-         (request.auth.token.email == "akashak2004ak@gmail.com" && request.auth.token.email_verified == true));
-    }
-
-    function isValidEmail(email) {
-      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
-    }
-
     // ===============================================================
-    // Domain Validators
+    // Products Collection (Agriculture)
     // ===============================================================
-
-    function isValidUser(data) {
-      return data.keys().hasAll(['id', 'name', 'email', 'role']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             isValidEmail(data.email) &&
-             data.role in ['super_admin', 'org_admin', 'producer', 'distributor', 'retailer', 'inspector', 'consumer', 'auditor'];
-    }
-
-    function isValidProduct(data) {
-      return data.keys().hasAll(['id', 'productId', 'companyId', 'domain', 'productName', 'status']) &&
-             data.productName is string && data.productName.size() > 0 && data.productName.size() < 200 &&
-             data.status in ['active', 'warning', 'critical', 'recalled', 'expired', 'verified', 'flagged'];
-    }
-
-    // ===============================================================
-    // Rules
-    // ===============================================================
-
-    match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin());
-      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) && request.resource.data.role == resource.data.role || isAdmin());
-    }
-
-    match /companies/{companyId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
     match /products/{productId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidProduct(request.resource.data);
-      allow update: if isAuthenticated() && isValidProduct(request.resource.data);
-      allow delete: if isAdmin();
+      // Phase 3: PUBLIC READ - anyone can verify products (no auth required)
+      // This enables the /verify endpoint to work for QR code scanning
+      allow read: if true;
+      
+      // Phase 3: FARMER WRITE - farmers can create products
+      allow create: if isFarmer() 
+        && request.resource.data.farmerId == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.origin is string
+        && request.resource.data.sku is string;
+      
+      // Phase 3: FARMER UPDATE - farmers can update their own products
+      allow update: if isFarmer()
+        && resource.data.farmerId == request.auth.uid;
+      
+      // Phase 3: FARMER DELETE - farmers can delete their own products
+      allow delete: if isFarmer()
+        && resource.data.farmerId == request.auth.uid;
     }
 
+    // ===============================================================
+    // Checkpoints Collection (Logistics)
+    // ===============================================================
     match /checkpoints/{checkpointId} {
+      // Phase 3: PUBLIC READ - anyone can view checkpoint timeline for verification
+      allow read: if true;
+      
+      // Phase 3: LOGISTICS WRITE - logistics handlers can add checkpoints
+      allow create: if isLogistics()
+        && request.resource.data.productId is string
+        && request.resource.data.handler.id == request.auth.uid;
+      
+      // Phase 3: LOGISTICS UPDATE - logistics can update their own checkpoints
+      allow update: if isLogistics()
+        && resource.data.handler.id == request.auth.uid;
+      
+      // Phase 3: LOGISTICS DELETE - logistics can delete their own checkpoints
+      allow delete: if isLogistics()
+        && resource.data.handler.id == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Revoked Tokens Collection (Auth)
+    // ===============================================================
+    match /revokedTokens/{tokenHash} {
+      // Backend can read to check if token is revoked
       allow read: if isAuthenticated();
+      
+      // Backend can write tokens on logout
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      
+      // Delete handled by TTL
+      allow delete: if false;
     }
 
-    match /ai_insights/{insightId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+    // ===============================================================
+    // Users Collection (Auth)
+    // ===============================================================
+    match /users/{userId} {
+      // Users can read their own profile
+      allow read: if isOwner(userId);
+      
+      // Backend writes via trusted SDK only
+      allow write: if false;
     }
 
+    // ===============================================================
+    // Companies Collection (Admin)
+    // ===============================================================
+    match /companies/{companyId} {
+      // Org members can read their own company
+      allow read: if isAuthenticated()
+        && request.auth.token.orgId == companyId;
+      
+      // Admins can read all companies
+      allow read: if isAuditor();
+      
+      // Backend writes via trusted SDK only
+      allow write: if false;
+    }
+
+    // ===============================================================
+    // Deny everything else
+    // ===============================================================
     match /{path=**} {
       allow read, write: if false;
     }

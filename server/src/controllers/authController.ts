@@ -1,9 +1,11 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { hashPassword, verifyPassword } from "../utils/password.js";
-import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
+import { signAccessToken, signRefreshToken, verifyRefreshToken, hashRefreshToken } from "../utils/jwt.js";
 import { createUser, findUserByEmail, type UserRole } from "../services/userService.js";
 import { completePasswordAction, getPasswordTokenInfo, issuePasswordActionToken } from "../services/passwordTokenService.js";
+import { db } from "../lib/firebase.js";
+import { collection, doc, setDoc, getDoc, deleteDoc } from "firebase/firestore";
 
 const registerSchema = z.object({
   name: z.string().min(2),
@@ -120,5 +122,79 @@ export async function completePasswordFlow(req: Request, res: Response) {
     });
   } catch (error: any) {
     return res.status(400).json({ error: error.message ?? "Failed to complete password action" });
+  }
+}
+
+/**
+ * Phase 3: Refresh access token
+ * POST /api/auth/refresh
+ * Body: { refreshToken: "..." }
+ * Returns new access token
+ */
+export async function refreshAccessToken(req: Request, res: Response) {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(401).json({ error: "Missing refresh token" });
+    }
+
+    // Verify refresh token signature
+    const payload = verifyRefreshToken(refreshToken);
+    if (!payload) {
+      return res.status(401).json({ error: "Invalid or expired refresh token" });
+    }
+
+    // Check if token has been revoked in Firestore
+    const revokedRef = doc(collection(db, "revokedTokens"), hashRefreshToken(refreshToken));
+    const revokedSnapshot = await getDoc(revokedRef);
+    
+    if (revokedSnapshot.exists()) {
+      return res.status(401).json({ error: "Refresh token has been revoked" });
+    }
+
+    // Issue new access token
+    return res.status(200).json({
+      accessToken: signAccessToken(payload)
+    });
+  } catch (error: any) {
+    console.error("[v0] Error refreshing token:", error);
+    return res.status(500).json({ error: "Failed to refresh token" });
+  }
+}
+
+/**
+ * Phase 3: Logout and revoke refresh token
+ * POST /api/auth/logout
+ * Body: { refreshToken: "..." }
+ * Stores token hash in revokedTokens collection
+ */
+export async function logout(req: Request, res: Response) {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ error: "Missing refresh token" });
+    }
+
+    // Verify token is valid before revoking
+    const payload = verifyRefreshToken(refreshToken);
+    if (!payload) {
+      return res.status(401).json({ error: "Invalid refresh token" });
+    }
+
+    // Store revoked token hash in Firestore
+    const tokenHash = hashRefreshToken(refreshToken);
+    const revokedRef = doc(collection(db, "revokedTokens"), tokenHash);
+    await setDoc(revokedRef, {
+      userId: payload.sub,
+      revokedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+    });
+
+    return res.status(200).json({
+      message: "Logged out successfully"
+    });
+  } catch (error: any) {
+    console.error("[v0] Error logging out:", error);
+    return res.status(500).json({ error: "Failed to logout" });
   }
 }

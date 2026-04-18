@@ -1,15 +1,19 @@
 import { Router } from "express";
 import passport from "../config/passport.js";
-import { completePasswordFlow, inspectPasswordToken, login, register, requestPasswordReset } from "../controllers/authController.js";
+import { completePasswordFlow, inspectPasswordToken, login, register, requestPasswordReset, refreshAccessToken, logout } from "../controllers/authController.js";
 import { signAccessToken, signRefreshToken } from "../utils/jwt.js";
+import { authLimiter, passwordLimiter } from "../middleware/authLimiter.js";
 
 const router = Router();
 
-router.post("/register", register);
-router.post("/login", login);
-router.post("/password/request-reset", requestPasswordReset);
+// Phase 3: Apply rate limiting to auth endpoints
+router.post("/register", authLimiter, register);
+router.post("/login", authLimiter, login);
+router.post("/refresh", authLimiter, refreshAccessToken);
+router.post("/logout", logout); // No rate limit on logout
+router.post("/password/request-reset", passwordLimiter, requestPasswordReset);
 router.get("/password/token/:token", inspectPasswordToken);
-router.post("/password/complete", completePasswordFlow);
+router.post("/password/complete", passwordLimiter, completePasswordFlow);
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"], session: false }));
 router.get(
   "/google/callback",

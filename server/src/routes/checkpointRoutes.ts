@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { authenticate } from "../middleware/auth.js";
+import { authorize } from "../middleware/rbac.js";
 import { createCheckpoint, getCheckpointsByProductId } from "../services/checkpointService.js";
 import { createCheckpointSchema } from "../validators/schemas.js";
 import { z } from "zod";
@@ -10,8 +11,9 @@ const router = Router();
  * POST /api/checkpoints
  * Add checkpoint to product (logistics handler)
  * SPEC.md: Logistics adds geolocation, timestamp, signature
+ * Phase 3: Only logistics/distributor roles can add checkpoints
  */
-router.post("/", authenticate, async (req: Request, res: Response) => {
+router.post("/", authenticate, authorize(["logistics", "distributor"]), async (req: Request, res: Response) => {
   try {
     // Validate request body against schema
     const validated = createCheckpointSchema.parse(req.body);

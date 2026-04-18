@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { authenticate } from "../middleware/auth.js";
+import { authorize } from "../middleware/rbac.js";
 import { createProduct, getProductById } from "../services/productService.js";
 import { createProductSchema } from "../validators/schemas.js";
 import { z } from "zod";
@@ -10,8 +11,9 @@ const router = Router();
  * POST /api/products
  * Register a new agricultural product
  * SPEC.md: Farmer registers product, writes to Firestore, blockchain registers, QR generated
+ * Phase 3: Only farmers/producers can register products
  */
-router.post("/", authenticate, async (req: Request, res: Response) => {
+router.post("/", authenticate, authorize(["farmer", "producer"]), async (req: Request, res: Response) => {
   try {
     // Validate request body against schema
     const validated = createProductSchema.parse(req.body);
